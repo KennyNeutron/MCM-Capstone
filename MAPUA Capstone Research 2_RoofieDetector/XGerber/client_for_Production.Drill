@@ -1,0 +1,41 @@
+M48
+METRIC
+; #@! TF.GenerationSoftware,Ing.-Buero FRIEDRICH,TARGET 3001! discover,V30.5.0.5
+; #@! TF.CreationDate,2022-04-10T23:46:15+08:00
+; #@! TF.FileFunction,Plated,1,2,PTH
+; #@! TA.AperFunction,ViaDrill,Plated,PTH
+T1F00S00C0.500
+; #@! TA.AperFunction,ComponentDrill,Plated,PTH
+T2F00S00C0.900
+; #@! TA.AperFunction,ComponentDrill,Plated,PTH
+T3F00S00C1.200
+; #@! TA.AperFunction,MechanicalDrill,Plated,PTH
+T4F00S00C1.200
+; #@! TA.AperFunction,ComponentDrill,Plated,PTH
+T5F00S00C2.000
+; #@! TA.AperFunction,MechanicalDrill,Plated,PTH
+T6F00S00C3.000
+%
+M71
+G05
+T1
+X32.2860Y8.6640
+X40.7950Y8.6640
+X31.5240Y16.6650
+X27.5870Y24.9200
+X30.8890Y24.9200
+T2
+X12.8550Y20.9300
+T3
+X36.2500Y32.5000
+X36.2500Y27.5000
+T4
+X23.7500Y32.5000
+X23.7500Y27.5000
+T5
+X12.8550Y41.4300
+T6
+X48.6690Y11.4580
+X43.5890Y50.9550
+X15.1410Y50.8280
+M30

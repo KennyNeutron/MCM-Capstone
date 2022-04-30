@@ -1,0 +1,32 @@
+CAM output for current project client_for_Production.T3001
+Output on 10. Apr 2022, 23:46h
+Current project created using TARGET 30.5.0.5 discover
+Output created using TARGET 3001! V30.5.0.5
+Current Project from TARGET NC edition: Commercial use is criminal!
+DELIVERY ADDRESS:
+  
+  
+  
+  GB- 
+  Tel: 
+  FAX: 
+  eMail: 
+Size of PCB: 60 mm x 60 mm
+
+Description of created files as follows:
+
+client_for_Production.Top = 16 = Copper top L1   ( *.Top )
+client_for_Production.Bot = 2 = Copper bottom L2   ( *.Bot )
+client_for_Production.Tool = drill tool list
+client_for_Production.Drill = Galvanised drills
+client_for_Production.Outline = 23 = PCB outline   ( *.Outline )
+client_for_Production.StopTop = 18 = Solder stop mask top   ( *.StopTop )
+client_for_Production.StopBot = 4 = Solder stop mask bottom   ( *.StopBot )
+client_for_Production.PosiTop = 21 = Position print top   ( *.PosiTop )
+client_for_Production.PosiBot = 7 = Position print bottom   ( *.PosiBot )
+client_for_Production.PasteTop = 19 = Solder paste top   ( *.PasteTop )
+client_for_Production.X3T = Gerber X3 components information top
+client_for_Production.X3B = Gerber X3 components information bottom
+
+
+Caution: Thinest text is smaller than 0.150mm: (0.130 at 11.97425 | 48.1025) on layer 21
