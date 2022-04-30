@@ -87,6 +87,7 @@ void get_gyrodata(){
 
   gyroX= g.gyro.x;
   gyroY= g.gyro.y;
+  gyroZ= g.gyro.z;
 
 
 //UNCOMMENT THIS PART FOR TROUBLESHOOTING PURPOSES ONLY

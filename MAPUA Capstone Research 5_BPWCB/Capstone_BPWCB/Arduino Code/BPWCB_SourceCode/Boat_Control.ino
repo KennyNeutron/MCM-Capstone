@@ -1,19 +1,257 @@
 //Boat Control
-void boat_runLeft() {
-  rudder_left();
-  ActivatePropeller(80);
+void boat_AutoRun() {
+  int counter = 0;
+  int count_limit = 240;
+
+
+
+  while (count_limit > 0) {
+    counter = 0;
+    while (counter < count_limit && sr04_getDistance() > 100) {
+      boat_runForward();
+      counter++;
+      delay(500);
+      if (get_IRStatus()) {
+        //THE BIN IS FULL
+        goto FullBin_stopAUTORUN;
+      }
+      if(get_BatteryVoltage()<=3.5){
+        goto BatteryLow_stopAUTORUN;
+      }
+    }
+
+    boat_stop();
+    delay(3000);
+    boat_faceEAST();
+
+    counter = 0;
+    while (counter < count_limit && sr04_getDistance() > 100) {
+      boat_runForward();
+      counter++;
+      delay(500);
+      if (get_IRStatus()) {
+        //THE BIN IS FULL
+        goto FullBin_stopAUTORUN;
+      }
+      if(get_BatteryVoltage()<=3.5){
+        goto BatteryLow_stopAUTORUN;
+      }
+    }
+
+
+    boat_stop();
+    delay(3000);
+    boat_faceSOUTH();
+
+    counter = 0;
+    while (counter < count_limit && sr04_getDistance() > 100) {
+      boat_runForward();
+      counter++;
+      delay(500);
+      if (get_IRStatus()) {
+        //THE BIN IS FULL
+        goto FullBin_stopAUTORUN;
+      }
+      if(get_BatteryVoltage()<=3.5){
+        goto BatteryLow_stopAUTORUN;
+      }
+    }
+
+
+    boat_stop();
+    delay(3000);
+    boat_faceWEST();
+
+    counter = 0;
+    while (counter < count_limit && sr04_getDistance() > 100) {
+      boat_runForward();
+      counter++;
+      delay(500);
+      if (get_IRStatus()) {
+        //THE BIN IS FULL
+        goto FullBin_stopAUTORUN;
+      }
+      if(get_BatteryVoltage()<=3.5){
+        goto BatteryLow_stopAUTORUN;
+      }
+    }
+
+
+    boat_stop();
+    delay(3000);
+    boat_faceNORTH();
+
+    counter = 0;
+    while (counter < count_limit && sr04_getDistance() > 100) {
+      boat_runForward();
+      counter++;
+      delay(500);
+      if (get_IRStatus()) {
+        //THE BIN IS FULL
+        goto FullBin_stopAUTORUN;
+      }
+      if(get_BatteryVoltage()<=3.5){
+        goto BatteryLow_stopAUTORUN;
+      }
+    }
+
+    count_limit -= 10; //decrease going forward for 5seconds
+  }
+
+  //NOW AT THE CENTER
+  delay(3000);
+
+  TextMessage = "I'm done cleaning! /n I will now return to home positon /n -BPWCB"; //text for the message.
+  Sim800l.sendSms(PhoneNumber, TextMessage);
+  //RETURN HOME
+  stop_conveyor();
+  boat_returnHOME();
+
+  goto run_EXIT;
+
+
+  //INTERRUPT OPERATION THE BIN IS FULL
+FullBin_stopAUTORUN:
+  delay(3000);
+  TextMessage = "My bin is full! /n I will now return to home positon /n -BPWCB"; //text for the message.
+  Sim800l.sendSms(PhoneNumber, TextMessage);
+  //RETURN HOME
+  stop_conveyor();
+  boat_returnHOME();
+  goto run_EXIT;
+
+BatteryLow_stopAUTORUN:
+  delay(3000);
+  TextMessage = "My Battery is Getting LOW! /n I will now return to home positon /n -BPWCB"; //text for the message.
+  Sim800l.sendSms(PhoneNumber, TextMessage);
+  //RETURN HOME
+  stop_conveyor();
+  boat_returnHOME();
+
+run_EXIT:
+  delay(1000);
+
 }
 
-void boat_runRight() {
-  rudder_right();
-  ActivatePropeller(100);
+//the boat will go HOME
+void boat_returnHOME() {
+  getLocation();
+
+  if (gps_CURRENTLat >= gps_HOMELat) {
+    boat_faceWEST();
+  } else if (gps_CURRENTLat <= gps_HOMELat) {
+    boat_faceEAST();
+  }
+
+  while (gps_CURRENTLat >= (gps_HOMELat + 5.00) || gps_CURRENTLat <= (gps_HOMELat - 5.00)) {
+    getLocation();
+    boat_runForward();
+    delay(3000);
+    boat_stop();
+  }
+
+  boat_stop();
+  delay(3000);
+  boat_faceSOUTH();
+
+  while (gps_CURRENTLong >= (gps_HOMELong + 5.00) || gps_CURRENTLong <= (gps_HOMELong - 5.00)) {
+    getLocation();
+    boat_runForward();
+    delay(3000);
+    boat_stop();
+  }
+
+
+  TextMessage = "I'm back at home position! /n -BPWCB"; //text for the message.
+  Sim800l.sendSms(PhoneNumber, TextMessage);
+
 }
 
+//the boat will face NORTH
+void boat_faceNORTH() {
+  delay(100);
+bfn_start:
+  get_gyrodata();
+
+  //FACING NORTH?
+  if (gyroX >= 85 && gyroY <= 95) {
+    goto bfn_exit;
+  } else {
+    rudder_left();
+    ActivatePropeller(80);
+    delay(3000);
+    goto bfn_start;
+  }
+bfn_exit:
+  delay(100);
+}
+
+//the boat will face SOUTH
+void boat_faceSOUTH() {
+  delay(100);
+bfs_start:
+  get_gyrodata();
+
+  //FACING SOUTH?
+  if (gyroX >= 85 && gyroY <= 95) {
+    goto bfs_exit;
+  } else {
+    rudder_left();
+    ActivatePropeller(80);
+    delay(3000);
+    goto bfs_start;
+  }
+bfs_exit:
+  delay(100);
+}
+
+
+//the boat will face WEST
+void boat_faceWEST() {
+  delay(100);
+bfw_start:
+  get_gyrodata();
+
+  //FACING WEST?
+  if (gyroX >= 85 && gyroY <= 95) {
+    goto bfw_exit;
+  } else {
+    rudder_left();
+    ActivatePropeller(80);
+    delay(3000);
+    goto bfw_start;
+  }
+bfw_exit:
+  delay(100);
+}
+
+//the boat will face EAST
+void boat_faceEAST() {
+  delay(100);
+bfe_start:
+  get_gyrodata();
+
+  //FACING RIGHT?
+  if (gyroX >= 140 && gyroY <= 130) {
+    goto bfe_exit;
+  } else {
+    rudder_left();
+    ActivatePropeller(80);
+    delay(3000);
+    goto bfe_start;
+  }
+
+bfe_exit:
+  delay(100);
+}
+
+//the boat will run FORWARD
 void boat_runForward() {
   rudder_forward();
   ActivatePropeller(100);
 }
 
+//the boat will STOP
 void boat_stop() {
   DeactivatePropeller();
 }
