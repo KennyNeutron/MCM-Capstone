@@ -1,6 +1,4 @@
 
-
-
 int get_traverseSpeed() {
   return analogRead(traverse_knob);
 }

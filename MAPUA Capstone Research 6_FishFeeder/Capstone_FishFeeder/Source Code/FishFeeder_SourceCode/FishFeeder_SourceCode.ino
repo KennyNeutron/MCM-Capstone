@@ -33,7 +33,7 @@ LiquidCrystal_I2C lcd(0x27, 16, 2); // set the LCD address to 0x27 for a 16 char
 
 //Buttons
 #define buttonDOWN 12
-#define buttonUP 13
+#define buttonUP  13
 
 
 bool started = false;
@@ -94,11 +94,12 @@ void loop() {
 
     feeds = IR_status();
 
-    if (!feeds) {  //There's feeds available
+    if (!feeds) {                         //There's feeds available
       run_Auger(get_augerSpeed());        //Activate the Auger based on the speed set
 
       if (millis() - prev_millis >= spinner_interval) { //if time passed is equal to the set interval then activate the spinner
         run_Spinner();
+        prev_millis=millis();
       }
       LED_OFF(); //No Notif yet
     } else {
@@ -139,7 +140,7 @@ void loop() {
   if (!status_buttonDOWN() && status_buttonUP()) {    //If ONLY button DOWN is pressed
     delay(100);
     while (!status_buttonDOWN());
-    if (spinner_interval >= 0) {
+    if (spinner_interval > 5000) {
       spinner_interval = spinner_interval - 5000; ///SUBTRACT 5 seconds to the spinner interval
     }
   }
