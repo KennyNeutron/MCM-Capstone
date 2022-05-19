@@ -1,222 +1,125 @@
+//ROOFIE NOTIFIER CAPSTONE PROJECT- SERVER
+//04-11-2022
 #include <Wire.h>
-#include <LiquidCrystal_I2C.h>
-#include <DS3231.h>
+#include <SPI.h>
+#include <nRF24L01.h>
+#include <RF24.h>
 
-LiquidCrystal_I2C lcd(0x27, 20, 4); // set the LCD address to 0x27 for a 16 chars and 2 line display
+#include "U8glib.h"
 
-DS3231 rtc;
+#define push_button 2
+#define redLED 2
+#define buzzer 3
 
-bool century = false;
-bool h12Flag;
-bool pmFlag;
+RF24 radio(9, 10); // CE-CSN
 
+U8GLIB_SSD1306_128X64 u8g(U8G_I2C_OPT_NONE | U8G_I2C_OPT_DEV_0); //OLED Display I2C / TWI
 
-//Solenoid Controls
-#define Mag1_Sol1 23    //NAMING FORMAT: Magazine 1 Solenoid 1
-#define Mag1_Sol2 25
-
-#define Mag2_Sol1 27
-#define Mag2_Sol2 29
-
-#define Mag3_Sol1 31
-#define Mag3_Sol2 33
-
-#define Mag4_Sol1 35
-#define Mag4_Sol2 37
-
-#define Mag5_Sol1 39
-#define Mag5_Sol2 41
-
-#define Mag6_Sol1 43
-#define Mag6_Sol2 45
+const byte RFaddress[6] = "RNCP1"; //RADIO ADDRESS abbv. ---> Roofie Notifier Capstone Project #1
 
 
-//Push Buttons
-#define pb_set  5
-#define pb_next 4
-#define pb_up   3
-#define pb_down 2
+String RadioMessage = "";
+String prevMessage = "";
 
-//CNY70
-#define cny_mag1  A0
-#define cny_mag2  A1
-#define cny_mag3  A2
-#define cny_mag4  A3
-#define cny_mag5  A4
-#define cny_mag6  A5
+String str_user[] = "";
 
-//Notifiers
-#define buzzer  6
-#define redLED  7
+bool PB_state = true;
+int num_user = 0;
 
-
-//CNY70 Status Flag
-bool  flag_cny1 = true;
-bool  flag_cny2 = true;
-bool  flag_cny3 = true;
-bool  flag_cny4 = true;
-bool  flag_cny5 = true;
-bool  flag_cny6 = true;
-
-
-//alarm variables
-uint8_t alarm_mag1_hour = 0;
-uint8_t alarm_mag1_min = 0;
-uint8_t alarm_mag1_pillNum = 1;
-bool    alarm_mag1_enable = false;
-
-uint8_t alarm_mag2_hour = 0;
-uint8_t alarm_mag2_min = 0;
-uint8_t alarm_mag2_pillNum = 1;
-bool    alarm_mag2_enable = false;
-
-uint8_t alarm_mag3_hour = 0;
-uint8_t alarm_mag3_min = 0;
-uint8_t alarm_mag3_pillNum = 1;
-bool    alarm_mag3_enable = false;
-
-uint8_t alarm_mag4_hour = 0;
-uint8_t alarm_mag4_min = 0;
-uint8_t alarm_mag4_pillNum = 1;
-bool    alarm_mag4_enable = false;
-
-uint8_t alarm_mag5_hour = 0;
-uint8_t alarm_mag5_min = 0;
-uint8_t alarm_mag5_pillNum = 1;
-bool    alarm_mag5_enable = false;
-
-uint8_t alarm_mag6_hour = 0;
-uint8_t alarm_mag6_min = 0;
-uint8_t alarm_mag6_pillNum = 1;
-bool    alarm_mag6_enable = false;
-
-
-//setup variables
-bool    alarm_setup = false; //if false no setup, if true goto
-uint8_t setup_count = 0;    //used to move between mag
-uint8_t setup_nextCount = 0;
-
-uint8_t alarm_current_hour = 0;
-uint8_t alarm_current_min = 0;
-uint8_t alarm_current_pillNum = 1;
-bool    alarm_current_enable = false;
-
-
-//notify alarm variables
-bool    alarm_hasStarted = false;
-bool    user_TookThePill = false;
-uint8_t hasStarted_count = 0;
-uint8_t prev_sec = 0;
 
 void setup() {
-  pinMode(Mag1_Sol1, OUTPUT);
-  pinMode(Mag1_Sol2, OUTPUT);
-  pinMode(Mag2_Sol1, OUTPUT);
-  pinMode(Mag2_Sol2, OUTPUT);
-  pinMode(Mag3_Sol1, OUTPUT);
-  pinMode(Mag3_Sol2, OUTPUT);
-  pinMode(Mag4_Sol1, OUTPUT);
-  pinMode(Mag4_Sol2, OUTPUT);
-  pinMode(Mag5_Sol1, OUTPUT);
-  pinMode(Mag5_Sol2, OUTPUT);
-  pinMode(Mag6_Sol1, OUTPUT);
-  pinMode(Mag6_Sol2, OUTPUT);
-
-  pinMode(pb_set, INPUT_PULLUP);
-  pinMode(pb_next, INPUT_PULLUP);
-  pinMode(pb_down, INPUT_PULLUP);
-  pinMode(pb_up, INPUT_PULLUP);
-
-  pinMode(cny_mag1, INPUT);
-  pinMode(cny_mag2, INPUT);
-  pinMode(cny_mag3, INPUT);
-  pinMode(cny_mag4, INPUT);
-  pinMode(cny_mag5, INPUT);
-  pinMode(cny_mag6, INPUT);
-
+  pinMode(push_button, INPUT);
   pinMode(buzzer, OUTPUT);
   pinMode(redLED, OUTPUT);
 
+  digitalWrite(redLED, HIGH); //turn OFF LED (active LOW);
   noTone(buzzer);
-  digitalWrite(redLED, LOW);
+
+  //u8g.setRot180();  //Rotation
+  if ( u8g.getMode() == U8G_MODE_R3G3B2 ) {
+    u8g.setColorIndex(255);     // white
+  }
+  else if ( u8g.getMode() == U8G_MODE_GRAY2BIT ) {
+    u8g.setColorIndex(3);         // max intensity
+  }
+  else if ( u8g.getMode() == U8G_MODE_BW ) {
+    u8g.setColorIndex(1);         // pixel on
+  }
+  else if ( u8g.getMode() == U8G_MODE_HICOLOR ) {
+    u8g.setHiColorByRGB(255, 255, 255);
+  }
+
+  radio.begin();
+  radio.openReadingPipe(0, RFaddress);
+  radio.setPALevel(RF24_PA_MAX);
+  radio.startListening();
 
 
-  //Init all solenoids
-  digitalWrite(Mag1_Sol1, 1);
-  digitalWrite(Mag1_Sol2, 0);
-  digitalWrite(Mag2_Sol1, 1);
-  digitalWrite(Mag2_Sol2, 0);
-  digitalWrite(Mag3_Sol1, 1);
-  digitalWrite(Mag3_Sol2, 0);
-  digitalWrite(Mag4_Sol1, 1);
-  digitalWrite(Mag4_Sol2, 0);
-  digitalWrite(Mag5_Sol1, 1);
-  digitalWrite(Mag5_Sol2, 0);
-  digitalWrite(Mag6_Sol1, 1);
-  digitalWrite(Mag6_Sol2, 0);
+  cli();//stop interrupts
 
-  Wire.begin();
-  lcd.init();
+  //set timer0 interrupt at 2kHz
+  TCCR0A = 0;// set entire TCCR2A register to 0
+  TCCR0B = 0;// same for TCCR2B
+  TCNT0  = 0;//initialize counter value to 0
+  // set compare match register for 2khz increments
+  OCR0A = 124;// = (16*10^6) / (2000*64) - 1 (must be <256)
+  // turn on CTC mode
+  TCCR0A |= (1 << WGM01);
+  // Set CS01 and CS00 bits for 64 prescaler
+  TCCR0B |= (1 << CS01) | (1 << CS00);
+  // enable timer compare interrupt
+  TIMSK0 |= (1 << OCIE0A);
+
+  sei();//allow interrupts
 
 }
 
 void loop() {
+  if (radio.available()) {
+    radio.read(&RadioMessage, sizeof(RadioMessage));
+  }
 
-  //Displaying Time
-  lcd.setCursor(1, 6);
-  lcd.print(rtc.getHour(h12Flag, pmFlag)); //24-hr
-  lcd.print(":");
-  lcd.print(rtc.getMinute());
-  lcd.print(":");
-  lcd.println(rtc.getSecond());
+  if (RadioMessage != prevMessage) {
+    num_user++;
+    str_user[num_user] = RadioMessage;
+  }
 
-  if (!status_PBset()) {
-    int btn_delay = 0;
-    while (!status_PBset()) {
-      btn_delay++;
-      delay(100);
+  u8g.firstPage();
+  do {
+    if (num_user > 0) {
+      draw(str_user[num_user]);
+      tone(buzzer, 1000);  //Buzz
+      digitalWrite(redLED, LOW); //Turn ON lED
+      delay(1500);
+      noTone(buzzer); //Turn OFF Buzzer
+      digitalWrite(redLED, HIGH); //Turn OFF LED
+      delay(1000);
     }
-    if (btn_delay > 50 && !status_PBset()) {
-      alarm_setup = true;
-    } else if (btn_delay > 3 && btn_delay < 20) {
-      user_TookThePill = true;
+  } while (u8g.nextPage());
+
+}
+
+
+void draw(String user_name) {
+  u8g.setFont(u8g_font_unifont);
+  u8g.setPrintPos(10, 30); u8g.print("NOTICE! CUP#"); u8g.print(user_name); u8g.print("need HELP!");
+}
+
+
+ISR(TIMER0_COMPA_vect) { //timer0 interrupt 2kHz
+  cli();
+
+  PB_state = digitalRead(push_button);
+
+  if (!PB_state) {
+    delay(100);
+    if (num_user > 0) {
+      num_user--;
+    }
+    while (!PB_state) {
+      PB_state = digitalRead(push_button);
     }
   }
 
-  if (alarm_setup) {
-    setup_count = 1;
-    setup_nextCount = 0;
-    alarm_current_hour = alarm_mag1_hour;
-    alarm_current_min = alarm_mag1_min;
-    alarm_current_pillNum = alarm_mag1_pillNum;
-    alarm_current_enable = alarm_mag1_enable;
-    setup_alarm();
-  }
-
-
-  if (!alarm_hasStarted) {
-    if (CheckForAlarm()) {
-      prev_sec = rtc.getSecond();
-    }
-  } else {
-    if (rtc.getSecond() != prev_sec) {
-      hasStarted_count++;
-      prev_sec = rtc.getSecond();
-    }
-    if (hasStarted_count < 60 && !user_TookThePill) { //if there's an alarm and the pill was not taken yet
-      alarmNow();     //Alarm Buzzer + LED for 60s
-    } else if (hasStarted_count >= 60 && !user_TookThePill) {
-      alarmLED();     //After 60s LED notifier only
-    }
-
-
-    //Disable the alarm after the user took the pill
-    if (user_TookThePill) {
-      hasStarted_count = false;
-      user_TookThePill = false;
-    }
-  }
-
-  CheckPillLevel();
-
+  sei();
 }
