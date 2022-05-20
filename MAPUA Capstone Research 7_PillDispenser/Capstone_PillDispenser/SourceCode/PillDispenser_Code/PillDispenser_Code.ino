@@ -92,7 +92,7 @@ bool    alarm_mag6_enable = false;
 
 
 //setup variables
-bool    alarm_setup = false; //if false no setup, if true goto
+bool    alarm_setup = false; //if false no setup, if true goto setup
 uint8_t setup_count = 0;    //used to move between mag
 uint8_t setup_nextCount = 0;
 

@@ -638,8 +638,8 @@ void dispense(uint8_t magSlot, uint8_t pills){
           break;
         default:
           goto dispense_exit;
-
       }
+      pills--;
   }
 
 dispense_exit:
